@@ -1,0 +1,51 @@
+-- 简易美观UI
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local UICorner = Instance.new("UICorner")
+local Title = Instance.new("TextLabel")
+local LoadButton = Instance.new("TextButton")
+local UICorner_2 = Instance.new("UICorner")
+
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+Frame.Parent = ScreenGui
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+Frame.BorderSizePixel = 0
+Frame.Position = UDim2.new(0.1, 0, 0.3, 0)
+Frame.Size = UDim2.new(0, 300, 0, 200)
+
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = Frame
+
+Title.Name = "Title"
+Title.Parent = Frame
+Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1.0
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "神秘工具 v1.0"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 20
+
+LoadButton.Name = "LoadButton"
+LoadButton.Parent = Frame
+LoadButton.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
+LoadButton.BorderSizePixel = 0
+LoadButton.Position = UDim2.new(0.1, 0, 0.4, 0)
+LoadButton.Size = UDim2.new(0.8, 0, 0, 50)
+LoadButton.Font = Enum.Font.GothamBold
+LoadButton.Text = "加载主脚本"
+LoadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadButton.TextSize = 18
+
+UICorner_2.CornerRadius = UDim.new(0, 8)
+UICorner_2.Parent = LoadButton
+
+LoadButton.MouseButton1Click:Connect(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hdjsjjdgrhj/OK/refs/heads/main/sb"))()
+    LoadButton.Text = "已加载 ✓"
+    wait(2)
+    LoadButton.Text = "重新加载"
+end)
