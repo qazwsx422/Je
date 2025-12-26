@@ -1,481 +1,558 @@
---// Made by Blissful#4992
---// Locals:
-local workspace = game:GetService("Workspace")
-local player = game:GetService("Players").LocalPlayer
-local camera = workspace.CurrentCamera
+local Visual = Tabs.Esp:AddRightGroupbox("3D方框绘制")
 
---// Settings:
-local on = true -- Use this if your making gui
+-- 3D方框绘制设置
+local Box3DSettings = {
+    -- 基本设置
+    Enabled = false,
+    ShowSurvivorBoxes = true,
+    ShowKillerBoxes = true,
+    
+    -- 颜色设置
+    SurvivorColor = Color3.fromRGB(0, 255, 255), -- 青色
+    KillerColor = Color3.fromRGB(255, 0, 0),     -- 红色
+    UseTeamColor = true,
+    
+    -- 样式设置
+    Thickness = 1,
+    Transparency = 0.7,
+    BoxHeightOffset = 0.5,
+    
+    -- 比例设置
+    SurvivorBoxScale = 1.0,
+    KillerBoxScale = 1.2,
+    
+    -- 宽度调节
+    LeftWidthScale = 1.0,
+    RightWidthScale = 1.0,
+    
+    -- 深度调节 (加强版)
+    FrontExtend = 1.0,
+    BackExtend = 1.0,
+    FrontExtendMultiplier = 1.0,  -- 前延伸倍数
+    BackExtendMultiplier = 1.0,   -- 后延伸倍数
+    
+    -- 高度调节
+    HeadOffset = 1.5,
+    FootOffset = 0.2,
+    BoxHeightScale = 1.0,         -- 方框高度比例
+    VerticalOffset = 0,           -- 垂直偏移
+    
+    -- 连接线
+    connection = nil,
+    removedConnection = nil
+}
 
-local Box_Color = Color3.fromRGB(0, 255, 50)
-local Box_Thickness = 1.4
-local Box_Transparency = 1 -- 1 Visible, 0 Not Visible
+-- 存储所有3D方框绘制对象
+local Box3DDrawings = {}
 
-local Tracers = true
-local Tracer_Color = Color3.fromRGB(0, 255, 50)
-local Tracer_Thickness = 1.4
-local Tracer_Transparency = 1 -- 1 Visible, 0 Not Visible
-
-local Autothickness = false -- Makes screen less encumbered
-
-local Team_Check = false
-local red = Color3.fromRGB(227, 52, 52)
-local green = Color3.fromRGB(88, 217, 24)
-
-local function NewLine()
-    local line = Drawing.new("Line")
-    line.Visible = false
-    line.From = Vector2.new(0, 0)
-    line.To = Vector2.new(1, 1)
-    line.Color = Box_Color
-    line.Thickness = Box_Thickness
-    line.Transparency = Box_Transparency
-    return line
+-- 创建3D方框绘制对象
+local function create3DBoxDrawing()
+    local drawing = {
+        lines = {},
+        visible = false
+    }
+    
+    for i = 1, 12 do
+        drawing.lines[i] = Drawing.new("Line")
+        drawing.lines[i].Thickness = Box3DSettings.Thickness
+        drawing.lines[i].Transparency = Box3DSettings.Transparency
+        drawing.lines[i].Visible = false
+    end
+    
+    return drawing
 end
 
---// Main Function:
-for i, v in pairs(game.Players:GetChildren()) do
-    --// Lines for 3D box (12)
-    local lines = {
-        line1 = NewLine(),
-        line2 = NewLine(),
-        line3 = NewLine(),
-        line4 = NewLine(),
-        line5 = NewLine(),
-        line6 = NewLine(),
-        line7 = NewLine(),
-        line8 = NewLine(),
-        line9 = NewLine(),
-        line10 = NewLine(),
-        line11 = NewLine(),
-        line12 = NewLine(),
-        Tracer = NewLine()
-    }
-
-    lines.Tracer.Color = Tracer_Color
-    lines.Tracer.Thickness = Tracer_Thickness
-    lines.Tracer.Transparency = Tracer_Transparency
-
-    --// Updates ESP (lines) in render loop
-    local function ESP()
-        local connection
-        connection = game:GetService("RunService").RenderStepped:Connect(function()
-            if on and v.Character ~= nil and v.Character:FindFirstChild("Humanoid") ~= nil and v.Character:FindFirstChild("HumanoidRootPart") ~= nil and v.Name ~= player.Name and v.Character.Humanoid.Health > 0 and v.Character:FindFirstChild("Head") ~= nil then
-                local pos, vis = camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                if vis then
-                    local Scale = v.Character.Head.Size.Y/2
-                    local Size = Vector3.new(2, 3, 1.5) * (Scale * 2) -- Change this for different box size
-
-                    local Top1 = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(-Size.X, Size.Y, -Size.Z)).p)
-                    local Top2 = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(-Size.X, Size.Y, Size.Z)).p)
-                    local Top3 = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(Size.X, Size.Y, Size.Z)).p)
-                    local Top4 = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(Size.X, Size.Y, -Size.Z)).p)
-
-                    local Bottom1 = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(-Size.X, -Size.Y, -Size.Z)).p)
-                    local Bottom2 = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(-Size.X, -Size.Y, Size.Z)).p)
-                    local Bottom3 = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(Size.X, -Size.Y, Size.Z)).p)
-                    local Bottom4 = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(Size.X, -Size.Y, -Size.Z)).p)
-
-                    --// Top:
-                    lines.line1.From = Vector2.new(Top1.X, Top1.Y)
-                    lines.line1.To = Vector2.new(Top2.X, Top2.Y)
-
-                    lines.line2.From = Vector2.new(Top2.X, Top2.Y)
-                    lines.line2.To = Vector2.new(Top3.X, Top3.Y)
-
-                    lines.line3.From = Vector2.new(Top3.X, Top3.Y)
-                    lines.line3.To = Vector2.new(Top4.X, Top4.Y)
-
-                    lines.line4.From = Vector2.new(Top4.X, Top4.Y)
-                    lines.line4.To = Vector2.new(Top1.X, Top1.Y)
-
-                    --// Bottom:
-                    lines.line5.From = Vector2.new(Bottom1.X, Bottom1.Y)
-                    lines.line5.To = Vector2.new(Bottom2.X, Bottom2.Y)
-
-                    lines.line6.From = Vector2.new(Bottom2.X, Bottom2.Y)
-                    lines.line6.To = Vector2.new(Bottom3.X, Bottom3.Y)
-
-                    lines.line7.From = Vector2.new(Bottom3.X, Bottom3.Y)
-                    lines.line7.To = Vector2.new(Bottom4.X, Bottom4.Y)
-
-                    lines.line8.From = Vector2.new(Bottom4.X, Bottom4.Y)
-                    lines.line8.To = Vector2.new(Bottom1.X, Bottom1.Y)
-
-                    --//S ides:
-                    lines.line9.From = Vector2.new(Bottom1.X, Bottom1.Y)
-                    lines.line9.To = Vector2.new(Top1.X, Top1.Y)
-
-                    lines.line10.From = Vector2.new(Bottom2.X, Bottom2.Y)
-                    lines.line10.To = Vector2.new(Top2.X, Top2.Y)
-
-                    lines.line11.From = Vector2.new(Bottom3.X, Bottom3.Y)
-                    lines.line11.To = Vector2.new(Top3.X, Top3.Y)
-
-                    lines.line12.From = Vector2.new(Bottom4.X, Bottom4.Y)
-                    lines.line12.To = Vector2.new(Top4.X, Top4.Y)
-
-                    --// Tracer:
-                    if Tracers then
-                        local trace = camera:WorldToViewportPoint((v.Character.HumanoidRootPart.CFrame * CFrame.new(0, -Size.Y, 0)).p)
-
-                        lines.Tracer.From = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y)
-                        lines.Tracer.To = Vector2.new(trace.X, trace.Y)
-                    end
-
-                    --// Teamcheck:
-                    if Team_Check then
-                        if v.TeamColor == player.TeamColor then
-                            for u, x in pairs(lines) do
-                                x.Color = green
-                            end
-                        else 
-                            for u, x in pairs(lines) do
-                                x.Color = red
-                            end
-                        end
-                    end
-
-                    --// Autothickness:
-                    if Autothickness then
-                        local distance = (player.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).magnitude
-                        local value = math.clamp(1/distance*100, 0.1, 4) --0.1 is min thickness, 6 is max
-                        for u, x in pairs(lines) do
-                            x.Thickness = value
-                        end
-                    else 
-                        for u, x in pairs(lines) do
-                            x.Thickness = Box_Thickness
-                        end
-                    end
-
-                    for u, x in pairs(lines) do
-                        if x ~= lines.Tracer then
-                            x.Visible = true
-                        end
-                    end
-                    if Tracers then
-                        lines.Tracer.Visible = true
-                    end
-                else 
-                    for u, x in pairs(lines) do
-                        x.Visible = false
-                    end
-                end
-            else 
-                for u, x in pairs(lines) do
-                    x.Visible = false
-                end
-                if game.Players:FindFirstChild(v.Name) == nil then
-                    connection:Disconnect()
+-- 计算模型的3D边界框（全方位调节）
+local function calculateModelBoundingBox(model, isKiller)
+    local rootPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("UpperTorso")
+    local head = model:FindFirstChild("Head")
+    
+    if rootPart then
+        local size = rootPart.Size
+        local cframe = rootPart.CFrame
+        
+        -- 应用比例调整
+        local scale = isKiller and Box3DSettings.KillerBoxScale or Box3DSettings.SurvivorBoxScale
+        size = size * scale
+        
+        -- 计算基础高度并应用高度比例
+        local baseHeight = 5
+        if head then
+            baseHeight = (head.Position.Y - rootPart.Position.Y) * 2
+        end
+        local height = (baseHeight + Box3DSettings.HeadOffset + Box3DSettings.FootOffset) * Box3DSettings.BoxHeightScale
+        
+        -- 调整左右宽度
+        local leftOffset = (size.X/2) * Box3DSettings.LeftWidthScale
+        local rightOffset = (size.X/2) * Box3DSettings.RightWidthScale
+        
+        -- 调整前后延伸 (加强版)
+        local frontOffset = (size.Z/2) * Box3DSettings.FrontExtend * Box3DSettings.FrontExtendMultiplier
+        local backOffset = (size.Z/2) * Box3DSettings.BackExtend * Box3DSettings.BackExtendMultiplier
+        
+        -- 计算最小和最大点
+        local min = Vector3.new(
+            cframe.Position.X - leftOffset,
+            cframe.Position.Y - height/2 + Box3DSettings.FootOffset,
+            cframe.Position.Z - backOffset
+        )
+        
+        local max = Vector3.new(
+            cframe.Position.X + rightOffset,
+            cframe.Position.Y + height/2 + Box3DSettings.HeadOffset,
+            cframe.Position.Z + frontOffset
+        )
+        
+        -- 应用高度偏移和垂直偏移
+        min = Vector3.new(min.X, min.Y + Box3DSettings.BoxHeightOffset + Box3DSettings.VerticalOffset, min.Z)
+        max = Vector3.new(max.X, max.Y + Box3DSettings.BoxHeightOffset + Box3DSettings.VerticalOffset, max.Z)
+        
+        return min, max
+    else
+        -- 回退到遍历所有部件的方法
+        local min = Vector3.new(math.huge, math.huge, math.huge)
+        local max = Vector3.new(-math.huge, -math.huge, -math.huge)
+        
+        for _, part in ipairs(model:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local cframe = part.CFrame
+                local size = part.Size
+                
+                local scale = isKiller and Box3DSettings.KillerBoxScale or Box3DSettings.SurvivorBoxScale
+                size = size * scale
+                
+                -- 调整左右宽度
+                local leftOffset = (size.X/2) * Box3DSettings.LeftWidthScale
+                local rightOffset = (size.X/2) * Box3DSettings.RightWidthScale
+                
+                -- 调整前后延伸 (加强版)
+                local frontOffset = (size.Z/2) * Box3DSettings.FrontExtend * Box3DSettings.FrontExtendMultiplier
+                local backOffset = (size.Z/2) * Box3DSettings.BackExtend * Box3DSettings.BackExtendMultiplier
+                
+                -- 计算顶点（考虑前后延伸）
+                local vertices = {
+                    cframe * Vector3.new(rightOffset, (size.Y/2) * Box3DSettings.BoxHeightScale, frontOffset),
+                    cframe * Vector3.new(-leftOffset, (size.Y/2) * Box3DSettings.BoxHeightScale, frontOffset),
+                    cframe * Vector3.new(rightOffset, (-size.Y/2) * Box3DSettings.BoxHeightScale, frontOffset),
+                    cframe * Vector3.new(-leftOffset, (-size.Y/2) * Box3DSettings.BoxHeightScale, frontOffset),
+                    cframe * Vector3.new(rightOffset, (size.Y/2) * Box3DSettings.BoxHeightScale, -backOffset),
+                    cframe * Vector3.new(-leftOffset, (size.Y/2) * Box3DSettings.BoxHeightScale, -backOffset),
+                    cframe * Vector3.new(rightOffset, (-size.Y/2) * Box3DSettings.BoxHeightScale, -backOffset),
+                    cframe * Vector3.new(-leftOffset, (-size.Y/2) * Box3DSettings.BoxHeightScale, -backOffset)
+                }
+                
+                -- 更新最小和最大点
+                for _, vertex in ipairs(vertices) do
+                    min = Vector3.new(
+                        math.min(min.X, vertex.X),
+                        math.min(min.Y, vertex.Y),
+                        math.min(min.Z, vertex.Z)
+                    )
+                    max = Vector3.new(
+                        math.max(max.X, vertex.X),
+                        math.max(max.Y, vertex.Y),
+                        math.max(max.Z, vertex.Z)
+                    )
                 end
             end
-        end)
+        end
+        
+        -- 应用高度偏移和垂直偏移
+        min = Vector3.new(min.X, min.Y + Box3DSettings.BoxHeightOffset + Box3DSettings.VerticalOffset, min.Z)
+        max = Vector3.new(max.X, max.Y + Box3DSettings.BoxHeightOffset + Box3DSettings.VerticalOffset, max.Z)
+        
+        return min, max
     end
-    coroutine.wrap(ESP)()
 end
 
-game.Players.PlayerAdded:Connect(function(newplr)
-    --// Lines for 3D box (12)
-    local lines = {
-        line1 = NewLine(),
-        line2 = NewLine(),
-        line3 = NewLine(),
-        line4 = NewLine(),
-        line5 = NewLine(),
-        line6 = NewLine(),
-        line7 = NewLine(),
-        line8 = NewLine(),
-        line9 = NewLine(),
-        line10 = NewLine(),
-        line11 = NewLine(),
-        line12 = NewLine(),
-        Tracer = NewLine()
+-- 更新单个3D方框
+local function updateSingle3DBox(model, drawing, color, isKiller)
+    local camera = workspace.CurrentCamera
+    local min, max = calculateModelBoundingBox(model, isKiller)
+    
+    -- 计算立方体的8个顶点
+    local vertices = {
+        Vector3.new(max.X, max.Y, max.Z), -- 右上后
+        Vector3.new(min.X, max.Y, max.Z), -- 左上后
+        Vector3.new(max.X, min.Y, max.Z), -- 右下后
+        Vector3.new(min.X, min.Y, max.Z), -- 左下后
+        Vector3.new(max.X, max.Y, min.Z), -- 右上前
+        Vector3.new(min.X, max.Y, min.Z), -- 左上前
+        Vector3.new(max.X, min.Y, min.Z), -- 右下前
+        Vector3.new(min.X, min.Y, min.Z)  -- 左下前
     }
+    
+    -- 转换顶点到屏幕空间
+    local screenVertices = {}
+    local anyVisible = false
+    
+    for i, vertex in ipairs(vertices) do
+        local screenPos, onScreen = camera:WorldToViewportPoint(vertex)
+        screenVertices[i] = Vector2.new(screenPos.X, screenPos.Y)
+        if onScreen then anyVisible = true end
+    end
+    
+    -- 设置线条属性
+    for _, line in pairs(drawing.lines) do
+        line.Color = color
+        line.Thickness = Box3DSettings.Thickness
+        line.Transparency = Box3DSettings.Transparency
+    end
+    
+    -- 绘制立方体边线
+    if anyVisible then
+        -- 前面4条边
+        drawing.lines[1].From = screenVertices[5] drawing.lines[1].To = screenVertices[6] -- 上面前
+        drawing.lines[2].From = screenVertices[6] drawing.lines[2].To = screenVertices[8] -- 左边前
+        drawing.lines[3].From = screenVertices[8] drawing.lines[3].To = screenVertices[7] -- 下面前
+        drawing.lines[4].From = screenVertices[7] drawing.lines[4].To = screenVertices[5] -- 右边前
+        
+        -- 后面4条边
+        drawing.lines[5].From = screenVertices[1] drawing.lines[5].To = screenVertices[2] -- 上面后
+        drawing.lines[6].From = screenVertices[2] drawing.lines[6].To = screenVertices[4] -- 左边后
+        drawing.lines[7].From = screenVertices[4] drawing.lines[7].To = screenVertices[3] -- 下面后
+        drawing.lines[8].From = screenVertices[3] drawing.lines[8].To = screenVertices[1] -- 右边后
+        
+        -- 连接前后面的4条边
+        drawing.lines[9].From = screenVertices[1] drawing.lines[9].To = screenVertices[5] -- 右上
+        drawing.lines[10].From = screenVertices[2] drawing.lines[10].To = screenVertices[6] -- 左上
+        drawing.lines[11].From = screenVertices[3] drawing.lines[11].To = screenVertices[7] -- 右下
+        drawing.lines[12].From = screenVertices[4] drawing.lines[12].To = screenVertices[8] -- 左下
+        
+        -- 显示所有线条
+        for _, line in pairs(drawing.lines) do
+            line.Visible = true
+        end
+        
+        drawing.visible = true
+    else
+        if drawing.visible then
+            for _, line in pairs(drawing.lines) do
+                line.Visible = false
+            end
+            drawing.visible = false
+        end
+    end
+end
 
-    lines.Tracer.Color = Tracer_Color
-    lines.Tracer.Thickness = Tracer_Thickness
-    lines.Tracer.Transparency = Tracer_Transparency
-
-    --// Updates ESP (lines) in render loop
-    local function ESP()
-        local connection
-        connection = game:GetService("RunService").RenderStepped:Connect(function()
-            if on and newplr.Character ~= nil and newplr.Character:FindFirstChild("Humanoid") ~= nil and newplr.Character:FindFirstChild("HumanoidRootPart") ~= nil and newplr.Name ~= player.Name and newplr.Character.Humanoid.Health > 0 and newplr.Character:FindFirstChild("Head") ~= nil then
-                local pos, vis = camera:WorldToViewportPoint(newplr.Character.HumanoidRootPart.Position)
-                if vis then
-                    local Scale = newplr.Character.Head.Size.Y/2
-                    local Size = Vector3.new(2, 3, 1.5) * (Scale * 2) -- Change this for different box size
-
-                    local Top1 = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(-Size.X, Size.Y, -Size.Z)).p)
-                    local Top2 = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(-Size.X, Size.Y, Size.Z)).p)
-                    local Top3 = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(Size.X, Size.Y, Size.Z)).p)
-                    local Top4 = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(Size.X, Size.Y, -Size.Z)).p)
-
-                    local Bottom1 = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(-Size.X, -Size.Y, -Size.Z)).p)
-                    local Bottom2 = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(-Size.X, -Size.Y, Size.Z)).p)
-                    local Bottom3 = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(Size.X, -Size.Y, Size.Z)).p)
-                    local Bottom4 = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(Size.X, -Size.Y, -Size.Z)).p)
-
-                    --// Top:
-                    lines.line1.From = Vector2.new(Top1.X, Top1.Y)
-                    lines.line1.To = Vector2.new(Top2.X, Top2.Y)
-
-                    lines.line2.From = Vector2.new(Top2.X, Top2.Y)
-                    lines.line2.To = Vector2.new(Top3.X, Top3.Y)
-
-                    lines.line3.From = Vector2.new(Top3.X, Top3.Y)
-                    lines.line3.To = Vector2.new(Top4.X, Top4.Y)
-
-                    lines.line4.From = Vector2.new(Top4.X, Top4.Y)
-                    lines.line4.To = Vector2.new(Top1.X, Top1.Y)
-
-                    --// Bottom:
-                    lines.line5.From = Vector2.new(Bottom1.X, Bottom1.Y)
-                    lines.line5.To = Vector2.new(Bottom2.X, Bottom2.Y)
-
-                    lines.line6.From = Vector2.new(Bottom2.X, Bottom2.Y)
-                    lines.line6.To = Vector2.new(Bottom3.X, Bottom3.Y)
-
-                    lines.line7.From = Vector2.new(Bottom3.X, Bottom3.Y)
-                    lines.line7.To = Vector2.new(Bottom4.X, Bottom4.Y)
-
-                    lines.line8.From = Vector2.new(Bottom4.X, Bottom4.Y)
-                    lines.line8.To = Vector2.new(Bottom1.X, Bottom1.Y)
-
-                    --//S ides:
-                    lines.line9.From = Vector2.new(Bottom1.X, Bottom1.Y)
-                    lines.line9.To = Vector2.new(Top1.X, Top1.Y)
-
-                    lines.line10.From = Vector2.new(Bottom2.X, Bottom2.Y)
-                    lines.line10.To = Vector2.new(Top2.X, Top2.Y)
-
-                    lines.line11.From = Vector2.new(Bottom3.X, Bottom3.Y)
-                    lines.line11.To = Vector2.new(Top3.X, Top3.Y)
-
-                    lines.line12.From = Vector2.new(Bottom4.X, Bottom4.Y)
-                    lines.line12.To = Vector2.new(Top4.X, Top4.Y)
-
-                    --// Tracer:
-                    if Tracers then
-                        local trace = camera:WorldToViewportPoint((newplr.Character.HumanoidRootPart.CFrame * CFrame.new(0, -Size.Y, 0)).p)
-                        lines.Tracer.From = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y)
-                        lines.Tracer.To = Vector2.new(trace.X, trace.Y)
+-- 更新所有3D方框
+local function update3DBoxes()
+    local players = game:GetService("Players")
+    local localPlayer = players.LocalPlayer
+    local camera = workspace.CurrentCamera
+    
+    -- 先隐藏所有现有的方框
+    for model, drawing in pairs(Box3DDrawings) do
+        if not model or not model.Parent then
+            -- 模型已不存在，清理绘制对象
+            for _, line in pairs(drawing.lines) do
+                line:Remove()
+            end
+            Box3DDrawings[model] = nil
+        else
+            -- 暂时隐藏
+            for _, line in pairs(drawing.lines) do
+                line.Visible = false
+            end
+            drawing.visible = false
+        end
+    end
+    
+    -- 处理幸存者方框
+    if Box3DSettings.ShowSurvivorBoxes then
+        local survivors = workspace:FindFirstChild("Survivors") or workspace.Players:FindFirstChild("Survivors")
+        if survivors then
+            for _, survivor in ipairs(survivors:GetChildren()) do
+                if survivor:IsA("Model") and survivor ~= localPlayer.Character then
+                    -- 获取或创建绘制对象
+                    if not Box3DDrawings[survivor] then
+                        Box3DDrawings[survivor] = create3DBoxDrawing()
                     end
-
-                    --// Teamcheck:
-                    if Team_Check then
-                        if newplr.TeamColor == player.TeamColor then
-                            for u, x in pairs(lines) do
-                                x.Color = green
-                            end
-                        else 
-                            for u, x in pairs(lines) do
-                                x.Color = red
-                            end
-                        end
-                    end
-
-                    --// Autothickness:
-                    if Autothickness then
-                        local distance = (player.Character.HumanoidRootPart.Position - newplr.Character.HumanoidRootPart.Position).magnitude
-                        local value = math.clamp(1/distance*100, 0.1, 4) --0.1 is min thickness, 6 is max
-                        for u, x in pairs(lines) do
-                            x.Thickness = value
-                        end
-                    else 
-                        for u, x in pairs(lines) do
-                            x.Thickness = Box_Thickness
-                        end
-                    end
-
-                    for u, x in pairs(lines) do
-                        if x ~= lines.Tracer then
-                            x.Visible = true
-                        end
-                    end
-                    if Tracers then
-                        lines.Tracer.Visible = true
-                    end
-                else 
-                    for u, x in pairs(lines) do
-                        x.Visible = false
-                    end
-                end
-            else 
-                for u, x in pairs(lines) do
-                    x.Visible = false
-                end
-                if game.Players:FindFirstChild(newplr.Name) == nil then
-                    connection:Disconnect()
+                    
+                    updateSingle3DBox(survivor, Box3DDrawings[survivor], Box3DSettings.SurvivorColor, false)
                 end
             end
-        end)
+        end
+        
+        -- 额外检查玩家列表中的幸存者
+        for _, player in ipairs(players:GetPlayers()) do
+            if player ~= localPlayer and player.Character and not player.Character:FindFirstChild("IsKiller") then
+                if not Box3DDrawings[player.Character] then
+                    Box3DDrawings[player.Character] = create3DBoxDrawing()
+                end
+                
+                updateSingle3DBox(player.Character, Box3DDrawings[player.Character], Box3DSettings.SurvivorColor, false)
+            end
+        end
     end
-    coroutine.wrap(ESP)()
-end)
--- Gui to Lua
--- Version: 3.2
-
--- Instances:
-
-local ScreenGui = Instance.new("ScreenGui")
-local Frame = Instance.new("Frame")
-local Frame_2 = Instance.new("Frame")
-local TextLabel = Instance.new("TextLabel")
-local TextButton = Instance.new("TextButton")
-local TextButton_2 = Instance.new("TextButton")
-local TextLabel_2 = Instance.new("TextLabel")
-
---Properties:
-
-ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-Frame.Parent = ScreenGui
-Frame.BackgroundColor3 = Color3.fromRGB(31, 31, 31)
-Frame.BorderColor3 = Color3.fromRGB(16, 16, 16)
-Frame.Position = UDim2.new(0.326547235, 0, 0.442340851, 0)
-Frame.Size = UDim2.new(0.346905529, 0, 0.194492236, 0)
-
-Frame_2.Parent = Frame
-Frame_2.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-Frame_2.BorderColor3 = Color3.fromRGB(16, 16, 16)
-Frame_2.Size = UDim2.new(1, 0, 0.26777932, 0)
-
-TextLabel.Parent = Frame_2
-TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TextLabel.BackgroundTransparency = 1.000
-TextLabel.Size = UDim2.new(1.00234735, 0, 1.08253634, 0)
-TextLabel.Font = Enum.Font.SourceSansSemibold
-TextLabel.Text = "Arceus | Aimbot"
-TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextLabel.TextSize = 16.000
-
-TextButton.Parent = Frame_2
-TextButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TextButton.BackgroundTransparency = 1.000
-TextButton.Position = UDim2.new(0.92957741, 0, 0, 0)
-TextButton.Size = UDim2.new(0.0697798356, 0, 0.991438508, 0)
-TextButton.Font = Enum.Font.SourceSansSemibold
-TextButton.Text = "_"
-TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextButton.TextSize = 14.000
-
-TextButton_2.Parent = Frame
-TextButton_2.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-TextButton_2.BorderColor3 = Color3.fromRGB(20, 20, 20)
-TextButton_2.Position = UDim2.new(0.0492957756, 0, 0.495575249, 0)
-TextButton_2.Size = UDim2.new(0.0469483584, 0, 0.176991165, 0)
-TextButton_2.Font = Enum.Font.SourceSansSemibold
-TextButton_2.Text = ""
-TextButton_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextButton_2.TextScaled = true
-TextButton_2.TextSize = 20.000
-TextButton_2.TextWrapped = true
-
-TextLabel_2.Parent = TextButton_2
-TextLabel_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TextLabel_2.BackgroundTransparency = 1.000
-TextLabel_2.Position = UDim2.new(1.54999995, 0, 0, 0)
-TextLabel_2.Size = UDim2.new(17.7999992, 0, 1, 0)
-TextLabel_2.Font = Enum.Font.SourceSansSemibold
-TextLabel_2.Text = "Aimbot"
-TextLabel_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextLabel_2.TextSize = 16.000
-TextLabel_2.TextWrapped = true
-TextLabel_2.TextXAlignment = Enum.TextXAlignment.Left
-
--- Scripts:
-
-local function RPTXOJ_fake_script() -- TextButton.LocalScript 
-	local script = Instance.new('LocalScript', TextButton)
-
-	local state = true
-	script.Parent.MouseButton1Down:Connect(function()
-		print"t"
-		state = not state
-		local LB_Size = script.Parent.Parent.AbsoluteSize
-		local NW_Size = UDim2.new(0, LB_Size.X, 0, LB_Size.Y)
-		if not state then
-			script.Parent.Text = "+"
-			game:GetService("TweenService"):Create(script.Parent.Parent.Parent, TweenInfo.new(0.5, Enum.EasingStyle.Linear), {
-				BackgroundTransparency = 1
-			}):Play()
-			for i, v in pairs(script.Parent.Parent.Parent:GetChildren()) do
-				if v:IsA("TextButton") then 
-					v.Visible = false
-					v.TextLabel.Visible = false
-				end
-			end
-		else
-			script.Parent.Text = "_"
-			game:GetService("TweenService"):Create(script.Parent.Parent.Parent, TweenInfo.new(0.5, Enum.EasingStyle.Linear), {
-				BackgroundTransparency = 0
-			}):Play()
-			for i, v in pairs(script.Parent.Parent.Parent:GetChildren()) do
-				if v:IsA("TextButton") then 
-					v.Visible = true
-					v.TextLabel.Visible = true
-				end
-			end
-		end
-	end)
+    
+    -- 处理杀手方框
+    if Box3DSettings.ShowKillerBoxes then
+        local killers = workspace:FindFirstChild("Killers") or workspace.Players:FindFirstChild("Killers")
+        if killers then
+            for _, killer in ipairs(killers:GetChildren()) do
+                if killer:IsA("Model") and killer ~= localPlayer.Character then
+                    -- 获取或创建绘制对象
+                    if not Box3DDrawings[killer] then
+                        Box3DDrawings[killer] = create3DBoxDrawing()
+                    end
+                    
+                    updateSingle3DBox(killer, Box3DDrawings[killer], Box3DSettings.KillerColor, true)
+                end
+            end
+        end
+        
+        -- 额外检查玩家列表中的杀手
+        for _, player in ipairs(players:GetPlayers()) do
+            if player ~= localPlayer and player.Character and player.Character:FindFirstChild("IsKiller") then
+                if not Box3DDrawings[player.Character] then
+                    Box3DDrawings[player.Character] = create3DBoxDrawing()
+                end
+                
+                updateSingle3DBox(player.Character, Box3DDrawings[player.Character], Box3DSettings.KillerColor, true)
+            end
+        end
+    end
 end
-coroutine.wrap(RPTXOJ_fake_script)()
-local function CIXXD_fake_script() -- TextButton_2.LocalScript 
-	local script = Instance.new('LocalScript', TextButton_2)
 
-	local state = false
-	script.Parent.MouseButton1Down:Connect(function()
-		state = not state
-		if state then 
-			script.Parent.Text = "x"
-		else
-			script.Parent.Text = ""
-		end
-	end)
-	
-	local Cam = workspace.CurrentCamera
-	
-	local hotkey = true
-	function lookAt(target, eye)
-		Cam.CFrame = CFrame.new(target, eye)
-	end
-	
-	function getClosestPlayerToCursor(trg_part)
-		local nearest = nil
-		local last = math.huge
-		for i,v in pairs(game.Players:GetPlayers()) do
-			if v ~= game.Players.LocalPlayer and game.Players.LocalPlayer.Character and v.Character and v.Character:FindFirstChild(trg_part) then
-				if game.Players.LocalPlayer.Character:FindFirstChild(trg_part) then
-					local ePos, vissss = workspace.CurrentCamera:WorldToViewportPoint(v.Character[trg_part].Position)
-					local AccPos = Vector2.new(ePos.x, ePos.y)
-					local mousePos = Vector2.new(workspace.CurrentCamera.ViewportSize.x / 2, workspace.CurrentCamera.ViewportSize.y / 2)
-					local distance = (AccPos - mousePos).magnitude
-					if distance < last and vissss and hotkey and distance < 400 then
-						last = distance
-						nearest = v
-					end
-				end
-			end
-		end
-		return nearest
-	end
-	
-	game:GetService("RunService").RenderStepped:Connect(function()
-		local closest = getClosestPlayerToCursor("Head")
-		if state and closest and closest.Character:FindFirstChild("Head") then
-			lookAt(Cam.CFrame.p, closest.Character:FindFirstChild("Head").Position)
-		end
-	end)
+-- 清理3D方框
+local function cleanup3DBoxes()
+    for _, drawing in pairs(Box3DDrawings) do
+        if drawing then
+            for _, line in pairs(drawing.lines) do
+                line:Remove()
+            end
+        end
+    end
+    Box3DDrawings = {}
 end
-coroutine.wrap(CIXXD_fake_script)()
-local function QNWNII_fake_script() -- Frame.LocalScript 
-	local script = Instance.new('LocalScript', Frame)
 
-	script.Parent.Active = true
-	script.Parent.Selectable = true
-	script.Parent.Draggable = true
-end
-coroutine.wrap(QNWNII_fake_script)()
+-- 主开关
+Visual:AddToggle("Box3DToggle", {
+    Text = "启用3D方框",
+    Default = false,
+    Callback = function(enabled)
+        Box3DSettings.Enabled = enabled
+        if enabled then
+            -- 初始化连接
+            if not Box3DSettings.connection then
+                Box3DSettings.connection = game:GetService("RunService").RenderStepped:Connect(update3DBoxes)
+            end
+            
+            -- 监听角色移除
+            if not Box3DSettings.removedConnection then
+                Box3DSettings.removedConnection = workspace.DescendantRemoving:Connect(function(descendant)
+                    if Box3DDrawings[descendant] then
+                        for _, line in pairs(Box3DDrawings[descendant].lines) do
+                            line:Remove()
+                        end
+                        Box3DDrawings[descendant] = nil
+                    end
+                end)
+            end
+        else
+            -- 关闭连接
+            if Box3DSettings.connection then
+                Box3DSettings.connection:Disconnect()
+                Box3DSettings.connection = nil
+            end
+            
+            if Box3DSettings.removedConnection then
+                Box3DSettings.removedConnection:Disconnect()
+                Box3DSettings.removedConnection = nil
+            end
+            
+            -- 清理绘制对象
+            cleanup3DBoxes()
+        end
+    end
+})
+
+-- 幸存者开关
+Visual:AddToggle("ShowSurvivorBoxes", {
+    Text = "显示幸存者方框",
+    Default = true,
+    Callback = function(enabled)
+        Box3DSettings.ShowSurvivorBoxes = enabled
+    end
+})
+
+-- 杀手开关
+Visual:AddToggle("ShowKillerBoxes", {
+    Text = "显示杀手方框",
+    Default = true,
+    Callback = function(enabled)
+        Box3DSettings.ShowKillerBoxes = enabled
+    end
+})
+
+-- 样式设置
+Visual:AddSlider("BoxThickness", {
+    Text = "线条粗细",
+    Min = 1,
+    Max = 5,
+    Default = 1,
+    Rounding = 0,
+    Callback = function(value)
+        Box3DSettings.Thickness = value
+    end
+})
+
+Visual:AddSlider("BoxTransparency", {
+    Text = "透明度",
+    Min = 0,
+    Max = 1,
+    Default = 0.7,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.Transparency = value
+    end
+})
+
+Visual:AddSlider("BoxHeightOffset", {
+    Text = "高度偏移",
+    Min = 0,
+    Max = 2,
+    Default = 0.5,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.BoxHeightOffset = value
+    end
+})
+
+
+Visual:AddSlider("BoxHeightScale", {
+    Text = "方框高度比例",
+    Min = 0.5,
+    Max = 2.5,
+    Default = 1.2,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.BoxHeightScale = value
+    end
+})
+
+
+Visual:AddSlider("VerticalOffset", {
+    Text = "垂直偏移",
+    Min = -5,
+    Max = 5,
+    Default = -0.5,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.VerticalOffset = value
+    end
+})
+
+
+Visual:AddSlider("SurvivorBoxScale", {
+    Text = "幸存者方框比例",
+    Min = 1.7,
+    Max = 2,
+    Default = 1.7,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.SurvivorBoxScale = value
+    end
+})
+
+Visual:AddSlider("KillerBoxScale", {
+    Text = "杀手方框比例",
+    Min = 1.7,
+    Max = 2,
+    Default = 1.7,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.KillerBoxScale = value
+    end
+})
+
+Visual:AddSlider("LeftWidthScale", {
+    Text = "左侧宽度比例",
+    Min = 1.0,
+    Max = 2,
+    Default = 1.0,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.LeftWidthScale = value
+    end
+})
+
+Visual:AddSlider("RightWidthScale", {
+    Text = "右侧宽度比例",
+    Min = 0.9,
+    Max = 2,
+    Default = 0.9,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.RightWidthScale = value
+    end
+})
+
+
+Visual:AddSlider("FrontExtend", {
+    Text = "前延伸基础值",
+    Min = 1.9,
+    Max = 2,
+    Default = 1.9,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.FrontExtend = value
+    end
+})
+
+Visual:AddSlider("BackExtend", {
+    Text = "后延伸基础值",
+    Min = 1.8,
+    Max = 2,
+    Default = 1.8,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.BackExtend = value
+    end
+})
+
+Visual:AddSlider("FrontExtendMultiplier", {
+    Text = "前延伸倍数",
+    Min = 1.0,
+    Max = 3.0,
+    Default = 1.0,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.FrontExtendMultiplier = value
+    end
+})
+
+Visual:AddSlider("BackExtendMultiplier", {
+    Text = "后延伸倍数",
+    Min = 1.0,
+    Max = 3.0,
+    Default = 1.0,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.BackExtendMultiplier = value
+    end
+})
+
+-- 高度调节
+Visual:AddSlider("HeadOffset", {
+    Text = "头部偏移",
+    Min = 1.5,
+    Max = 3,
+    Default = 1.5,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.HeadOffset = value
+    end
+})
+
+Visual:AddSlider("FootOffset", {
+    Text = "脚部偏移",
+    Min = 0.2,
+    Max = 1,
+    Default = 0.2,
+    Rounding = 1,
+    Callback = function(value)
+        Box3DSettings.FootOffset = value
+    end
+})
